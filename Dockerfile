@@ -20,6 +20,6 @@ COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
 # 暴露的端口（如果不需要网页，其实不暴露出端口也行，完全走 Cloudflare 隧道）
-EXPOSE 3000
+EXPOSE 5000
 
 CMD ["./entrypoint.sh"]
