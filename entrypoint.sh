@@ -1,12 +1,12 @@
 #!/bin/sh
 
-# 1. 动态生成 Xray 配置文件
+# 1. 动态生成 Xray 配置文件（直接监听平台强制要求的 5000 端口）
 cat <<EOF > /app/config.json
 {
   "log": { "loglevel": "none" },
   "inbounds": [
     { 
-      "port": ${ARGO_PORT:-8001}, 
+      "port": 5000, 
       "protocol": "vless", 
       "settings": { "clients": [{ "id": "${UUID}" }], "decryption": "none" },
       "streamSettings": { "network": "ws", "wsSettings": { "path": "/vless-argo" } }
@@ -16,17 +16,15 @@ cat <<EOF > /app/config.json
 }
 EOF
 
-# 2. 启动 Xray 并放到后台
-/app/xray -c /app/config.json >/dev/null 2>&1 &
+# 2. 后台启动 Xray
+/app/xray -c /app/config.json &
 
-# 3. 启动哪吒监控客户端（如果不需要哪吒，可以把这三行删掉进一步省内存）
+# 3. 后台启动哪吒监控（如果填写了对应环境变量）
 if [ -n "${NEZHA_SERVER}" ] && [ -n "${NEZHA_KEY}" ]; then
-  echo "Starting Nezha Agent..."
-  /app/nezha-agent --server ${NEZHA_SERVER} --secret ${NEZHA_KEY} --tls >/dev/null 2>&1 &
+  /app/nezha-agent --server ${NEZHA_SERVER} --secret ${NEZHA_KEY} --tls &
 fi
 
-# 4. 修改这里：不再运行 Node.js。直接在前台启动 cloudflared
-# 这样 cloudflared 会常驻前台支撑容器，同时省去了 Node.js 虚拟机的巨大内存开销
+# 4. 前台启动 Cloudflare 隧道（支撑整个容器常驻不退出）
 if [ -n "${ARGO_TOKEN}" ]; then
   echo "Starting Cloudflare Tunnel as main process..."
   exec /app/cloudflared tunnel --no-autoupdate run --token ${ARGO_TOKEN}
