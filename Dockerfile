@@ -1,11 +1,11 @@
-FROM node:20-alpine
+# 换成纯 alpine 基础镜像，不再包含沉重的 node 运行环境
+FROM alpine:3.19
 
-# 安装基础工具，包含必不可少的解压工具 unzip
 RUN apk add --no-cache wget ca-certificates unzip
 
 WORKDIR /app
 
-# 下载、解压并赋予可执行权限
+# 下载所需的组件
 RUN wget -O xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
     unzip xray.zip xray && rm xray.zip && chmod +x xray
 
@@ -15,14 +15,11 @@ RUN wget -O cloudflared https://github.com/cloudflare/cloudflared/releases/lates
 RUN wget -O nezha.zip https://github.com/nezhahq/agent/releases/latest/download/nezha-agent_linux_amd64.zip && \
     unzip nezha.zip nezha-agent && rm nezha.zip && chmod +x nezha-agent
 
-# 复制 Node.js 项目配置文件
-COPY package*.json ./
-RUN npm install --production
-COPY . .
-
-# 确保启动脚本有执行权限
+# 删除了 COPY package.json 和 RUN npm install 逻辑
+COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
+# 暴露的端口（如果不需要网页，其实不暴露出端口也行，完全走 Cloudflare 隧道）
 EXPOSE 3000
 
 CMD ["./entrypoint.sh"]
