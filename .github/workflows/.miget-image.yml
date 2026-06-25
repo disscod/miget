@@ -15,8 +15,21 @@ jobs:
       uses: actions/checkout@v4
 
     # 2. 设置 Docker Buildx（已修正为官方 docker/ 路径）
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+          - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: disscod/miget-node-service:latest
+          # 核心修改：同时打包 amd64 和 arm64 两个架构
+          platforms: linux/amd64,linux/arm64
+
 
     # 3. 登录到 Docker Hub
     - name: Log in to Docker Hub
