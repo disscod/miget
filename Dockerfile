@@ -1,11 +1,11 @@
-# 换成纯 alpine 基础镜像，不再包含沉重的 node 运行环境
 FROM alpine:3.19
 
-RUN apk add --no-cache wget ca-certificates unzip
+# 安装 thttpd（超轻量网页服务器，只占几MB内存，极其稳定响应5000端口）
+RUN apk add --no-cache wget ca-certificates unzip sed thttpd
 
 WORKDIR /app
 
-# 下载所需的组件
+# 下载所需的二进制组件
 RUN wget -O xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
     unzip xray.zip xray && rm xray.zip && chmod +x xray
 
@@ -15,11 +15,12 @@ RUN wget -O cloudflared https://github.com/cloudflare/cloudflared/releases/lates
 RUN wget -O nezha.zip https://github.com/nezhahq/agent/releases/latest/download/nezha-agent_linux_amd64.zip && \
     unzip nezha.zip nezha-agent && rm nezha.zip && chmod +x nezha-agent
 
-# 删除了 COPY package.json 和 RUN npm install 逻辑
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
+# 创建一个极简的静态网页，用来应对平台的 5000 端口健康检查
+RUN mkdir -p /app/www && echo "OK" > /app/www/index.html
 
-# 暴露的端口（如果不需要网页，其实不暴露出端口也行，完全走 Cloudflare 隧道）
+COPY entrypoint.sh .
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
+
 EXPOSE 5000
 
 CMD ["./entrypoint.sh"]
