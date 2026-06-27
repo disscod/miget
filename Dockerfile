@@ -1,18 +1,26 @@
+# === 第一阶段：安装依赖（在各自的目标架构下原生运行，不走 QEMU 模拟） ===
+FROM node:alpine3.22 AS builder
+
+WORKDIR /tmp
+
+# 安装编译原生模块可能需要的工具（koffi 编译需要）
+RUN apk add --no-cache python3 make g++ gcc
+
+COPY package.json ./
+RUN npm install --omit=dev
+
+# === 第二阶段：最终运行镜像（极简、干净） ===
 FROM node:alpine3.22
 
 WORKDIR /tmp
 
-# 1. 安装项目运行所需的系统级基础依赖（不再包含 apk upgrade 减少干扰）
+# 安装项目运行所需的系统底层依赖
 RUN apk add --no-cache openssl curl gcompat iproute2 coreutils bash
 
-# 2. 直接把宿主机上已经装好的 node_modules 和代码一并复制进去
-COPY node_modules ./node_modules
+# 从第一阶段把装好的依赖复制过来
+COPY --from=builder /tmp/node_modules ./node_modules
 COPY index.js package.json ./
 
-# 如果你的项目里真的不需要 index.html，下面这行可以不写（根据代码来看确实没用到）
-# COPY index.html ./ 
-
-# 3. 赋予执行权限
 RUN chmod +x index.js
 
 EXPOSE 5000/tcp
