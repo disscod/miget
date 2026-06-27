@@ -22,14 +22,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # 1. 在宿主机原生环境配置 Node.js
+      # 1. 配置 Node.js（移除了 cache 强制校验，升级到 Node 22）
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
 
-      # 2. 宿主机上直接原生安装依赖，稳如磐石
+      # 2. 宿主机上原生安装依赖
       - name: Install Dependencies
         run: npm install --omit=dev
 
@@ -40,14 +39,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 3. 设置多架构打包所需的环境
+      # 3. 设置多架构打包环境
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      # 4. 把已经带有 node_modules 的本地目录直接打包进多架构镜像
+      # 4. 打包并推送
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:
