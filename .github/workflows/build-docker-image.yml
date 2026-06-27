@@ -1,4 +1,4 @@
-Name: Build and Push Docker Image
+name: Build and Push Docker Image
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 💡 必须加上这一步，否则 Buildx 无法处理多架构镜像的最终合并
+      # 提供跨架构最终打包时的底层支撑
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
