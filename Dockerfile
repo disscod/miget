@@ -1,23 +1,25 @@
-# 换用自带标准 glibc 的 slim 镜像，完美兼容 koffi 和底层 .so 库
-FROM node:20-slim
+# syntax=docker/dockerfile:1.7
 
-WORKDIR /tmp
+FROM node:22-bookworm-slim
 
-# 安装运行所需的系统工具（对应之前的 alpine 工具）
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssl \
-    curl \
-    iproute2 \
-    coreutils \
-    bash \
-    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
 
-# 直接把外部已经装好、编译好的依赖和核心代码塞进来
-COPY node_modules ./node_modules
-COPY index.js package.json ./
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        openssl \
+        curl \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN chmod +x index.js
+COPY package*.json ./
 
-EXPOSE 5000/tcp
+RUN npm install --omit=dev
 
-CMD ["node", "index.js"]
+COPY . .
+
+ENV NODE_ENV=production
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
